@@ -1,0 +1,353 @@
+<script src="./d3.v4.min.js"></script>
+<script src="./gantt-chart-d3.js"></script>
+<script src="./wc-configurable.js"></script>
+
+<dom-module id="wc-gantt">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+     
+      .chart {
+        font-family: Arial, sans-serif;
+        font-size: 12px;
+      }
+      
+      .axis path,
+      .axis line {
+        fill: none;
+        stroke: #000;
+        shape-rendering: crispEdges;
+      }
+      
+      .bar-status0 {
+        fill: #33b5e5;
+      }
+      
+      .bar-status1 {
+        fill: #CC0000;
+      }
+      
+      .bar-status2 {
+        fill: #669900;
+      }
+      
+      .bar-status1 {
+        fill: #33b5e5;
+      }
+      
+      .bar-status4 {
+        fill: #ffbb33;
+      }
+    </style>
+    <div id="myGantt"></div>
+  </template>
+  <script>
+  Polymer({
+    is: 'wc-gantt',
+    behaviors: [
+      behaviors['wc-configurable']('wc-task')
+    ],
+    properties: {
+      tasks: {
+        type: Object,
+        value: function() {
+          return [];
+        }
+      },
+      taskStatus: {
+        type: Object,
+        value: function() {
+          return {
+            "STATUS0": "bar-status0 "  + this.is,
+            "STATUS1": "bar-status1 "  + this.is,
+            "STATUS2": "bar-status2 "  + this.is,
+            "STATUS3": "bar-status3 "  + this.is
+          };
+        }
+      },
+      taskNames: {
+        type: Object,
+        value: function() {
+          return ["Task1", "Task2", "Task3", "Task4", "Task5"];
+        }
+      }
+    },
+    config: function(cfg) {
+      this._createGantt();
+      cfg.forEach(function(task){ this._addTask(task) }, this);
+      this.changeTimeDomain();
+      this.gantt.redraw(this.tasks);
+    },
+    execute: function(ev) {
+      this.addTask(ev.detail);
+    },
+
+    _createGantt: function() {
+      if (this.tasks.length>0) {
+        this.tasks.sort(function(a, b) {
+          return a.end - b.end;
+        });
+        var maxDate = this.tasks[this.tasks.length - 1].end;
+        this.tasks.sort(function(a, b) {
+          return a.start - b.start;
+        });
+        var minDate = this.tasks[0].start;
+      } else {
+        var maxDate = new Date();
+        var minDate = new Date();
+      }
+      var format = "%H:%M";
+      this.timeDomainString = "1week";
+
+      this.gantt = d3
+        .gantt(this.querySelector("#myGantt"))
+        .taskTypes(this.taskNames)
+        .taskStatus(this.taskStatus)
+        .tickFormat(format)
+        .height(450)
+        .width(800);
+
+      this.gantt.timeDomainMode("fixed");
+      this.changeTimeDomain();
+
+      this.gantt([]);
+
+      //this.addTask(this._getRandomTask());
+
+    },  
+    changeTimeDomain: function () {
+      switch (this.timeDomainString) {
+        case "1hr":
+          format = "%H:%M:%S";
+          this.gantt.timeDomain([d3.timeHour.offset(this.getEndDate(), -1), this.getEndDate()]);
+          break;
+        case "3hr":
+          format = "%H:%M";
+          this.gantt.timeDomain([d3.timeHour.offset(this.getEndDate(), -3), this.getEndDate()]);
+          break;
+
+        case "6hr":
+          format = "%H:%M";
+          this.gantt.timeDomain([d3.timeHour.offset(this.getEndDate(), -6), this.getEndDate()]);
+          break;
+
+        case "1day":
+          format = "%H:%M";
+          this.gantt.timeDomain([d3.timeDay.offset(this.getEndDate(), -1), this.getEndDate()]);
+          break;
+
+        case "1week":
+          format = "%a %H:%M";
+          this.gantt.timeDomain([d3.timeDay.offset(this.getEndDate(), -7), this.getEndDate()]);
+          break;
+        default:
+          format = "%H:%M"
+
+      }
+      this.gantt.tickFormat(format);
+      this.gantt.redraw(this.tasks);
+    },
+    getEndDate: function() {
+      var lastEndDate = Date.now();
+      if (this.tasks.length > 0) {
+        lastEndDate = this.tasks[this.tasks.length - 1].end;
+      }
+      return lastEndDate;
+    },
+
+    _addTask: function(dataTask) {
+      var lastEndDate = this.getEndDate();
+      //var start = new Date(dataTask.start).getTime();
+      //var end = new Date(dataTask.end).getTime();
+      this.tasks.push({
+        "start": d3.timeHour.offset(lastEndDate, dataTask.start),
+        "end": d3.timeHour.offset(lastEndDate, dataTask.end + 1),
+        "name": dataTask.name,
+        "state": dataTask.state,
+        "_length": this.taskNames.length
+      });
+    },
+
+    addTask: function(dataTask) {
+      this._addTask(dataTask);
+      this.changeTimeDomain();
+      this.gantt.redraw(this.tasks);
+    },
+
+    removeTask: function() {
+      this.tasks.pop();
+      this.changeTimeDomain();
+      this.gantt.redraw(this.tasks);
+    },
+    _getRandomTask: function() {
+      var taskStatusKeys = Object.keys(this.taskStatus);
+      return ({
+        "lastEndDate": this.getEndDate(),
+        "taskStatusKeys": taskStatusKeys,
+        "taskStatusName": taskStatusKeys[Math.floor(Math.random() * taskStatusKeys.length)],
+        "taskName": this.taskNames[Math.floor(Math.random() * this.taskNames.length)]
+      });
+    }
+
+/***** DRAG & DROP ******
+defineDragAndDrop: function() {
+
+  var w = 750,
+    h = 450,
+    r = 120;
+
+var width = 300,
+    height = 200;
+this.dragbarw = 20;
+
+this.drag = d3.behavior.drag()
+    .origin(Object)
+    .on("drag", this.dragmove);
+
+this.dragright = d3.behavior.drag()
+    .origin(Object)
+    .on("drag", this.rdragresize);
+
+this.dragleft = d3.behavior.drag()
+    .origin(Object)
+    .on("drag", this.ldragresize);
+
+this.dragtop = d3.behavior.drag()
+    .origin(Object)
+    .on("drag", this.tdragresize);
+
+this.dragbottom = d3.behavior.drag()
+    .origin(Object)
+    .on("drag", this.bdragresize);
+  }
+  },
+
+initDragAndDrop: function(){
+  var svg = this.querySelector('svg');
+
+  var newg = svg.append("g")
+        .data([{x: width / 2, y: height / 2}]);
+
+  this.dragrect = newg.append("rect")
+        .attr("id", "active")
+        .attr("x", function(d) { return d.x; })
+        .attr("y", function(d) { return d.y; })
+        .attr("height", height)
+        .attr("width", width)
+        .attr("fill-opacity", .5)
+        .attr("cursor", "move")
+        .call(this.drag);
+
+  this.dragbarleft = newg.append("rect")
+        .attr("x", function(d) { return d.x - (dragbarw/2); })
+        .attr("y", function(d) { return d.y + (dragbarw/2); })
+        .attr("height", height - dragbarw)
+        .attr("id", "dragleft")
+        .attr("width", dragbarw)
+        .attr("fill", "lightblue")
+        .attr("fill-opacity", .5)
+        .attr("cursor", "ew-resize")
+        .call(this.dragleft);
+
+  this.dragbarright = newg.append("rect")
+        .attr("x", function(d) { return d.x + width - (dragbarw/2); })
+        .attr("y", function(d) { return d.y + (dragbarw/2); })
+        .attr("id", "dragright")
+        .attr("height", height - dragbarw)
+        .attr("width", dragbarw)
+        .attr("fill", "lightblue")
+        .attr("fill-opacity", .5)
+        .attr("cursor", "ew-resize")
+        .call(this.dragright);
+
+  this.dragbartop = newg.append("rect")
+        .attr("x", function(d) { return d.x + (dragbarw/2); })
+        .attr("y", function(d) { return d.y - (dragbarw/2); })
+        .attr("height", dragbarw)
+        .attr("id", "dragleft")
+        .attr("width", width - dragbarw)
+        .attr("fill", "lightgreen")
+        .attr("fill-opacity", .5)
+        .attr("cursor", "ns-resize")
+        .call(this.dragtop);
+
+  this.dragbarbottom = newg.append("rect")
+        .attr("x", function(d) { return d.x + (dragbarw/2); })
+        .attr("y", function(d) { return d.y + height - (dragbarw/2); })
+        .attr("id", "dragright")
+        .attr("height", dragbarw)
+        .attr("width", width - dragbarw)
+        .attr("fill", "lightgreen")
+        .attr("fill-opacity", .5)
+        .attr("cursor", "ns-resize")
+        .call(this.dragbottom);
+},
+
+dragmove: function(d) {
+      dragrect
+          .attr("x", d.x = Math.max(0, Math.min(w - width, d3.event.x)))
+      dragbarleft 
+          .attr("x", function(d) { return d.x - (dragbarw/2); })
+      dragbarright 
+          .attr("x", function(d) { return d.x + width - (dragbarw/2); })
+      dragbartop 
+          .attr("x", function(d) { return d.x + (dragbarw/2); })
+      dragbarbottom 
+          .attr("x", function(d) { return d.x + (dragbarw/2); })
+},
+
+ldragresize: function(d) {
+   if (isXChecked) {
+      var oldx = d.x; 
+     //Max x on the right is x + width - dragbarw
+     //Max x on the left is 0 - (dragbarw/2)
+      d.x = Math.max(0, Math.min(d.x + width - (dragbarw / 2), d3.event.x)); 
+      width = width + (oldx - d.x);
+      dragbarleft
+        .attr("x", function(d) { return d.x - (dragbarw / 2); });
+       
+      dragrect
+        .attr("x", function(d) { return d.x; })
+        .attr("width", width);
+
+     dragbartop 
+        .attr("x", function(d) { return d.x + (dragbarw/2); })
+        .attr("width", width - dragbarw)
+     dragbarbottom 
+        .attr("x", function(d) { return d.x + (dragbarw/2); })
+        .attr("width", width - dragbarw)
+  }
+},
+
+ rdragresize: function(d) {
+   if (isXChecked) {
+     //Max x on the left is x - width 
+     //Max x on the right is width of screen + (dragbarw/2)
+     var dragx = Math.max(d.x + (dragbarw/2), Math.min(w, d.x + width + d3.event.dx));
+
+     //recalculate width
+     width = dragx - d.x;
+
+     //move the right drag handle
+     dragbarright
+        .attr("x", function(d) { return dragx - (dragbarw/2) });
+
+     //resize the drag rectangle
+     //as we are only resizing from the right, the x coordinate does not need to change
+     dragrect
+        .attr("width", width);
+     dragbartop 
+        .attr("width", width - dragbarw)
+     dragbarbottom 
+        .attr("width", width - dragbarw)
+  }
+}
+*/
+
+  });
+
+  </script>
+
+</dom-module>

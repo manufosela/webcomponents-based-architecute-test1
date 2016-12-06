@@ -1,0 +1,35 @@
+<dom-module id="wc-task-factory">
+  <script>
+  (function(){
+    var NAMES = ['Task1', 'Task2', 'Task3', 'Task4', 'Task5'];
+    var STATUS = ['STATUS0', 'STATUS1', 'STATUS2', 'STATUS3', 'STATUS4' ];
+    var MAXOFFSET = 10;
+    var random = function(m) {
+      return Math.floor( Math.random() * m );
+    }
+    Polymer({
+      is: 'wc-task-factory',
+      properties: {
+        sleep: {
+          type: Number,
+          value: 1
+        }
+      },
+      create: function() {
+        return {
+          name: NAMES[random(NAMES.length)],
+          start: random(3),
+          end: random(7) + 3,
+          state: STATUS[random(STATUS.length)]
+        }
+      },
+      ready: function(){
+        setInterval(function(){
+          var task = this.create();
+          this.fire('new-task', task);
+        }.bind(this), this.sleep * 1000);
+      }
+    });
+    })();
+  </script>
+</dom-module>

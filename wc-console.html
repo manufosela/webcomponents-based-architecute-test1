@@ -1,0 +1,62 @@
+<dom-module id="wc-console">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+    </style>
+    <p>Rules</p>
+    <form>
+      <label>On: {{on}}</label>
+      <label>For: {{for}}</label>
+      <label>
+        <select name="with">
+          <template is="dom-repeat" items="{{optionsWith}}">
+            <option value="{{item.id}}">Factory {{item.index}} - Sleep {{item.sleep}}</option>
+          </template>
+        </select>
+      </label>
+      <div>
+        <input type="button" name="switchOn" on-click="ok" value="Ok"><input type="button" name="switchOFF" on-click="cancel" value="Cancel">
+      </div>
+    </form>
+  </template>
+  <script>
+    Polymer({
+      is: 'wc-console',
+      properties: {
+        on: {
+          type: String
+        },
+        for: {
+          type: String
+        },
+        with: {
+          type: String
+        }
+      },
+      attached: function(){
+        this.optionsWith = this.searchAll(this.with);
+      },
+      search: function (ref) {
+        return Polymer.dom (this.parentNode)
+          .querySelector (ref);
+      },
+      searchAll: function (ref) {
+        return Polymer.dom (this.parentNode)
+          .querySelectorAll (ref);
+      },
+
+      ok: function(ev){
+        var _with = "#"+this.querySelector("select[name=with]").value;
+        var binder = this.search("wc-bind");
+        binder.bind({on:this.on, with:_with, for: this.for});
+      },
+      cancel: function(ev) {
+        var _with = "#"+this.querySelector("select[name=with]").value;
+        var binder = this.search("wc-bind");
+        binder.unbind({on:this.on, with:_with, for: this.for});
+      }
+    });
+  </script>
+</dom-module>

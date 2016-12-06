@@ -1,0 +1,77 @@
+<script src="./wc-configurable.js"></script>
+<dom-module id="wc-bind">
+  <script>
+    (function(){
+      var BINDS = {
+        event: function(rule) {
+          var on = rule.on;
+          var target = rule.target;
+          var _with = rule.with;
+          var hn = function(ev) { target.execute(ev); };
+          _with.addEventListener(on, hn);
+          return hn;
+        },
+        data: function(rule){
+
+        },
+        message: function(rule) {
+
+        }
+      };
+
+      Polymer({
+        is: 'wc-bind',
+        behaviors: [
+          behaviors['wc-configurable']('wc-rule')
+        ],
+        properties: {
+          for: {
+            type: String
+          }
+        },
+        config: function(rules){
+          this.rules = [];
+          rules.forEach(function(rule){
+            this.bind(rule);
+          }.bind(this));
+        },
+
+        search: function (ref) {
+          return Polymer.dom (this.parentNode)
+            .querySelector (ref);
+        },
+
+        bind: function(rule){
+          rule.type = rule.type || "event";
+          rule.target = this.search(this.for);
+          rule.with = this.search(rule.with);
+          rule.hn = BINDS[rule.type](rule);
+          this.rules.push(rule);
+        },
+
+        unbind: function(rule){
+          var on = rule.on;
+          var _with = rule.with;
+          this.rules
+            .filter(function(rule){
+              var __with = this.search(_with);
+              return rule.on === on && rule.with === __with;
+            }.bind(this))
+            .forEach(function(rule){
+              var __with = this.search(_with);
+              __with.removeEventListener(on, rule.hn);
+            }.bind(this));
+          console.log(this.rules);
+          this.rules = this.rules
+            .filter(function(rule){
+              var __with = this.search(_with);
+              console.log(rule.with, __with);
+              return rule.with !== __with
+            }.bind(this));
+          console.log(this.rules);
+        }
+        
+      });
+    })();
+  </script>
+</dom-module>

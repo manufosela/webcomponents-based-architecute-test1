@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+    <script src="bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+    <link rel="import" href="./bower_components/polymer/polymer.html">
+    <link rel="import" href="./wc-task-factory.html">
+    <link rel="import" href="./wc-bind.html">
+    <link rel="import" href="./wc-gantt.html">
+    <link rel="import" href="./wc-console.html">
+  </head>
+  <body>
+    <wc-task-factory id="myfactory1"></wc-task-factory>
+    <wc-task-factory id="myfactory2" sleep="2"></wc-task-factory>
+    <wc-task-factory id="myfactory3" sleep="3"></wc-task-factory>
+    <wc-task-factory id="myfactory4" sleep="5"></wc-task-factory>
+    <wc-bind for="#mygantt">
+      <!--wc-rule type="event" with="#myfactory1" on="new-task"></wc-rule-->
+    </wc-bind>
+    <wc-gantt id="mygantt">
+      <wc-task name="Task1" start="3" end="5" state="STATUS0"></wc-task>
+      <wc-task name="Task2" start="2" end="4" state="STATUS1"></wc-task>
+      <wc-task name="Task3" start="3" end="6" state="STATUS2"></wc-task>
+    </wc-gantt>
+    <wc-console with="wc-task-factory" on="new-task" for="wc-gantt"></wc-console>
+  </body>
+</html>
